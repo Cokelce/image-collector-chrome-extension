@@ -12,6 +12,31 @@ const DRIVE_UPLOAD_API = 'https://www.googleapis.com/upload/drive/v3';
 const LOCAL_SETTINGS_DB = 'ImageCollectorSettingsDB';
 const LOCAL_SETTINGS_STORE = 'settings';
 const LOCAL_DRIVE_HANDLE_KEY = 'driveFolderHandle';
+const NOISY_URL_TAGS = new Set([
+  'api',
+  'asset',
+  'assets',
+  'common',
+  'download',
+  'file',
+  'getcroppingimg',
+  'getvideoreduce',
+  'homeviewlook',
+  'image',
+  'images',
+  'img',
+  'link',
+  'preview',
+  'previewfileimg',
+  'static',
+  'thumb',
+  'thumbnail',
+  'upload',
+  'uploads',
+  'url-only',
+  'video',
+  'wallpaperforum'
+]);
 
 // 全局错误捕获
 self.addEventListener('error', (event) => {
@@ -134,7 +159,7 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
       url: imageUrl,
       fileName: fileName,
       category: analysis.category || '未分类',
-      tags: [...new Set([...urlKeywords, ...analysis.tags])],
+      tags: cleanTags([...urlKeywords, ...analysis.tags]),
       color: analysis.color || null,
       width: analysis.width || 0,
       height: analysis.height || 0,
@@ -167,11 +192,12 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
       tags: extractUrlKeywords(imageUrl)
     }) || (message.mediaType === 'video' ? '动态壁纸' : '链接收藏');
 
+    const fallbackTags = cleanTags([...extractUrlKeywords(imageUrl), 'url-only']);
     const id = await addImage({
       url: imageUrl,
       fileName: buildFileName(imageUrl, '', message.mediaType),
       category,
-      tags: [...new Set([...extractUrlKeywords(imageUrl), 'url-only'])],
+      tags: fallbackTags,
       color: null,
       width: 0,
       height: 0,
@@ -190,7 +216,7 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
     syncImageToDriveIfReady(id).catch((syncError) => {
       console.warn('[ImageCollector] Drive auto sync skipped:', syncError.message);
     });
-    return { id, fileName: buildFileName(imageUrl, '', message.mediaType), category, tags: ['url-only'], savedBlob: false };
+    return { id, fileName: buildFileName(imageUrl, '', message.mediaType), category, tags: fallbackTags, savedBlob: false };
   }
 }
 
@@ -284,13 +310,42 @@ function extractUrlKeywords(url) {
     const segments = pathname.split('/').filter(s => s && s.length > 2);
     const keywords = [];
     for (const segment of segments) {
-      const clean = segment.replace(/\.[^.]+$/, '').toLowerCase();
-      if (clean.length > 1) keywords.push(clean);
+      const clean = cleanUrlKeyword(segment);
+      if (clean.length > 1 && !isNoisyTag(clean)) keywords.push(clean);
     }
     return [...new Set(keywords)].slice(0, 5);
   } catch {
     return [];
   }
+}
+
+function cleanTags(tags) {
+  const cleaned = [];
+  for (const tag of tags || []) {
+    const value = String(tag || '').trim();
+    if (!value || isNoisyTag(value)) continue;
+    if (!cleaned.includes(value)) cleaned.push(value);
+  }
+  return cleaned.slice(0, 8);
+}
+
+function cleanUrlKeyword(segment) {
+  try {
+    const decoded = decodeURIComponent(String(segment));
+    return decoded.replace(/\.[^.]+$/, '').trim().toLowerCase();
+  } catch {
+    return String(segment).replace(/\.[^.]+$/, '').trim().toLowerCase();
+  }
+}
+
+function isNoisyTag(tag) {
+  const value = String(tag || '').trim().toLowerCase();
+  if (!value) return true;
+  if (NOISY_URL_TAGS.has(value)) return true;
+  if (/^\d{6,}$/.test(value)) return true;
+  if (/^[a-f0-9]{16,}$/i.test(value)) return true;
+  if (value.length > 36 && /^[a-z0-9_-]+$/i.test(value) && !/[-_]/.test(value)) return true;
+  return false;
 }
 
 // 基础分析

@@ -35,6 +35,31 @@ const BASE_CATEGORIES = [
   '其他收藏',
   '未分类'
 ];
+const NOISY_DISPLAY_TAGS = new Set([
+  'api',
+  'asset',
+  'assets',
+  'common',
+  'download',
+  'file',
+  'getcroppingimg',
+  'getvideoreduce',
+  'homeviewlook',
+  'image',
+  'images',
+  'img',
+  'link',
+  'preview',
+  'previewfileimg',
+  'static',
+  'thumb',
+  'thumbnail',
+  'upload',
+  'uploads',
+  'url-only',
+  'video',
+  'wallpaperforum'
+]);
 
 // DOM 元素
 const gallery = document.getElementById('gallery');
@@ -534,7 +559,7 @@ function renderGallery() {
     filtered = filtered.filter(img => {
       const searchStr = [
         img.category || '',
-        ...(img.tags || []),
+        ...getVisibleTags(img),
         img.fileName || '',
         img.pageTitle || '',
         img.url || ''
@@ -604,8 +629,9 @@ function renderGallery() {
         catTag.textContent = img.category;
         overlay.appendChild(catTag);
       }
-      if (img.tags && img.tags.length > 0) {
-        img.tags.slice(0, 2).forEach(tag => {
+      const visibleTags = getVisibleTags(img);
+      if (visibleTags.length > 0) {
+        visibleTags.slice(0, 2).forEach(tag => {
           const tagEl = document.createElement('span');
           tagEl.className = 'card-tag';
           tagEl.textContent = tag;
@@ -722,8 +748,9 @@ async function openPreview(id) {
   `;
   
   previewTags.innerHTML = '';
-  if (img.tags && img.tags.length > 0) {
-    img.tags.forEach(tag => {
+  const visibleTags = getVisibleTags(img);
+  if (visibleTags.length > 0) {
+    visibleTags.forEach(tag => {
       const span = document.createElement('span');
       span.className = 'preview-tag';
       span.textContent = tag;
@@ -958,6 +985,27 @@ function isVideoRecord(img) {
   return img?.mediaType === 'video' ||
     (img?.mimeType || '').startsWith('video/') ||
     /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(img?.fileName || img?.url || '');
+}
+
+function getVisibleTags(img) {
+  const category = img?.category || '';
+  const visible = [];
+  for (const tag of img?.tags || []) {
+    const value = String(tag || '').trim();
+    if (!value || value === category || isNoisyDisplayTag(value)) continue;
+    if (!visible.includes(value)) visible.push(value);
+  }
+  return visible;
+}
+
+function isNoisyDisplayTag(tag) {
+  const value = String(tag || '').trim().toLowerCase();
+  if (!value) return true;
+  if (NOISY_DISPLAY_TAGS.has(value)) return true;
+  if (/^\d{6,}$/.test(value)) return true;
+  if (/^[a-f0-9]{16,}$/i.test(value)) return true;
+  if (value.length > 36 && /^[a-z0-9_-]+$/i.test(value) && !/[-_]/.test(value)) return true;
+  return false;
 }
 
 async function getImageRecord(id) {

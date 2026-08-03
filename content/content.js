@@ -8,6 +8,32 @@
   if (window.__imageCollectorInjected) return;
   window.__imageCollectorInjected = true;
 
+  const NOISY_URL_TAGS = new Set([
+    'api',
+    'asset',
+    'assets',
+    'common',
+    'download',
+    'file',
+    'getcroppingimg',
+    'getvideoreduce',
+    'homeviewlook',
+    'image',
+    'images',
+    'img',
+    'link',
+    'preview',
+    'previewfileimg',
+    'static',
+    'thumb',
+    'thumbnail',
+    'upload',
+    'uploads',
+    'url-only',
+    'video',
+    'wallpaperforum'
+  ]);
+
   // 注入样式
   const style = document.createElement('style');
   style.textContent = `
@@ -121,7 +147,7 @@
         url: imageUrl,
         fileName: fileName,
         category: analysis.category || '未分类',
-        tags: [...new Set([...urlKeywords, ...analysis.tags])],
+        tags: cleanTagsDirect([...urlKeywords, ...analysis.tags]),
         width: analysis.width || 0,
         height: analysis.height || 0,
         size: fileSize,
@@ -147,13 +173,42 @@
       const segments = pathname.split('/').filter(s => s && s.length > 2);
       const keywords = [];
       for (const segment of segments) {
-        const clean = segment.replace(/\.[^.]+$/, '').toLowerCase();
-        if (clean.length > 1) keywords.push(clean);
+        const clean = cleanUrlKeywordDirect(segment);
+        if (clean.length > 1 && !isNoisyTagDirect(clean)) keywords.push(clean);
       }
       return [...new Set(keywords)].slice(0, 5);
     } catch {
       return [];
     }
+  }
+
+  function cleanTagsDirect(tags) {
+    const cleaned = [];
+    for (const tag of tags || []) {
+      const value = String(tag || '').trim();
+      if (!value || isNoisyTagDirect(value)) continue;
+      if (!cleaned.includes(value)) cleaned.push(value);
+    }
+    return cleaned.slice(0, 8);
+  }
+
+  function cleanUrlKeywordDirect(segment) {
+    try {
+      const decoded = decodeURIComponent(String(segment));
+      return decoded.replace(/\.[^.]+$/, '').trim().toLowerCase();
+    } catch {
+      return String(segment).replace(/\.[^.]+$/, '').trim().toLowerCase();
+    }
+  }
+
+  function isNoisyTagDirect(tag) {
+    const value = String(tag || '').trim().toLowerCase();
+    if (!value) return true;
+    if (NOISY_URL_TAGS.has(value)) return true;
+    if (/^\d{6,}$/.test(value)) return true;
+    if (/^[a-f0-9]{16,}$/i.test(value)) return true;
+    if (value.length > 36 && /^[a-z0-9_-]+$/i.test(value) && !/[-_]/.test(value)) return true;
+    return false;
   }
 
   async function analyzeImageBasicDirect(imageUrl) {
