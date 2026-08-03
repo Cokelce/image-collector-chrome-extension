@@ -7,7 +7,6 @@
   const FALLBACK_CATEGORY = '其他收藏';
 
   const TEXT_RULES = [
-    ['动态壁纸', ['video', 'mp4', 'webm', 'mov', 'm4v', 'live', 'dynamic', 'motion', 'previewfileimg', 'getvideoreduce', '动图', '动态', '动态壁纸', '视频']],
     ['人像人物', ['portrait', 'people', 'person', 'girl', 'boy', 'woman', 'man', 'face', 'beauty', 'model', 'cosplay', 'avatar', '人像', '人物', '美女', '女生', '女孩', '男生', '写真', '头像', '明星']],
     ['动漫插画', ['anime', 'manga', 'comic', 'cartoon', 'illustration', 'illust', 'drawing', 'artwork', '二次元', '动漫', '插画', '漫画', '卡通', '原画', '手绘']],
     ['风景自然', ['landscape', 'nature', 'mountain', 'forest', 'sky', 'cloud', 'sea', 'ocean', 'beach', 'flower', 'scenery', 'sunset', '风景', '自然', '山', '森林', '天空', '云', '海', '花', '日落']],
@@ -35,6 +34,18 @@
   }
 
   async function analyzeBlob(blob, meta = {}) {
+    const contentType = blob?.type || meta.mimeType || '';
+    if (isMotionRecord(meta, contentType)) {
+      const ext = motionExtension(meta, contentType);
+      return {
+        category: '动态壁纸',
+        tags: [...new Set(['动图', ext].filter(Boolean))],
+        color: null,
+        width: 0,
+        height: 0
+      };
+    }
+
     const result = {
       category: classifyText(meta),
       tags: [],
@@ -43,7 +54,6 @@
       height: 0
     };
 
-    const contentType = blob?.type || meta.mimeType || '';
     if (contentType.includes('image')) result.tags.push(contentType.split('/')[1]);
 
     try {
@@ -79,6 +89,8 @@
   }
 
   async function analyzeRecord(record) {
+    if (isMotionRecord(record)) return '动态壁纸';
+
     const category = classifyText(record);
     if (category) return category;
 
@@ -90,6 +102,36 @@
 
     if (record?.width && record?.height) return classifyShape(record.width / record.height);
     return FALLBACK_CATEGORY;
+  }
+
+  function isMotionRecord(meta = {}, contentType = '') {
+    const mime = String(contentType || meta.mimeType || '').toLowerCase();
+    const mediaType = String(meta.mediaType || '').toLowerCase();
+    const fileOrUrl = [
+      meta.fileName,
+      meta.imageUrl,
+      meta.url
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    return mediaType === 'video' ||
+      mime.startsWith('video/') ||
+      mime === 'image/gif' ||
+      /\.(mp4|webm|mov|m4v|gif)(?:$|\?)/i.test(fileOrUrl);
+  }
+
+  function motionExtension(meta = {}, contentType = '') {
+    const mime = String(contentType || meta.mimeType || '').split(';')[0].trim().toLowerCase();
+    const byMime = {
+      'image/gif': 'gif',
+      'video/mp4': 'mp4',
+      'video/webm': 'webm',
+      'video/quicktime': 'mov',
+      'video/x-m4v': 'm4v'
+    };
+    if (byMime[mime]) return byMime[mime];
+
+    const fileOrUrl = [meta.fileName, meta.imageUrl, meta.url].filter(Boolean).join(' ');
+    return fileOrUrl.match(/\.(mp4|webm|mov|m4v|gif)(?:$|\?)/i)?.[1]?.toLowerCase() || '';
   }
 
   function readBitmapStats(bitmap) {

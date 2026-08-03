@@ -184,25 +184,26 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
     return { id, fileName, category: imageData.category, tags: imageData.tags, savedBlob: true };
   } catch (error) {
     console.warn('[ImageCollector] Blob save failed, keeping URL-only record:', error.message);
+    const mediaType = getMediaType('', imageUrl, message.mediaType);
     const category = ImageCollectorAnalyzer.classifyText({
       imageUrl,
       pageUrl,
       pageTitle,
-      fileName: buildFileName(imageUrl, '', message.mediaType),
+      fileName: buildFileName(imageUrl, '', mediaType),
       tags: extractUrlKeywords(imageUrl)
-    }) || (message.mediaType === 'video' ? '动态壁纸' : '链接收藏');
+    }) || (mediaType === 'video' ? '动态壁纸' : '链接收藏');
 
     const fallbackTags = cleanTags([...extractUrlKeywords(imageUrl), 'url-only']);
     const id = await addImage({
       url: imageUrl,
-      fileName: buildFileName(imageUrl, '', message.mediaType),
+      fileName: buildFileName(imageUrl, '', mediaType),
       category,
       tags: fallbackTags,
       color: null,
       width: 0,
       height: 0,
       size: 0,
-      mediaType: message.mediaType === 'video' ? 'video' : 'image',
+      mediaType,
       pageUrl,
       pageTitle,
       source,
@@ -216,7 +217,7 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
     syncImageToDriveIfReady(id).catch((syncError) => {
       console.warn('[ImageCollector] Drive auto sync skipped:', syncError.message);
     });
-    return { id, fileName: buildFileName(imageUrl, '', message.mediaType), category, tags: fallbackTags, savedBlob: false };
+    return { id, fileName: buildFileName(imageUrl, '', mediaType), category, tags: fallbackTags, savedBlob: false };
   }
 }
 
@@ -353,7 +354,7 @@ async function analyzeImageBasic(blob, meta) {
   if (meta.mediaType === 'video' || (blob.type || '').startsWith('video/')) {
     const ext = extFromMime(blob.type, 'video');
     return {
-      category: ImageCollectorAnalyzer.classifyText(meta) || '动态壁纸',
+      category: '动态壁纸',
       tags: ['video', '动图', ext],
       color: null,
       width: 0,

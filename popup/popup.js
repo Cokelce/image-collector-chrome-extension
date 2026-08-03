@@ -298,7 +298,7 @@ async function loadImages() {
 }
 
 async function classifyExistingImages(db) {
-  const pending = allImages.filter(img => !img.category || img.category === '未分类');
+  const pending = allImages.filter(shouldAutoClassifyImage);
   for (const img of pending) {
     try {
       const fullImage = img.imageData ? img : await db.getImage(img.id);
@@ -311,6 +311,11 @@ async function classifyExistingImages(db) {
       // 单张图片分类失败不影响弹窗打开。
     }
   }
+}
+
+function shouldAutoClassifyImage(img) {
+  if (!img.category || img.category === '未分类') return true;
+  return img.category === '动态壁纸' && !isMotionRecord(img);
 }
 
 async function backfillMissingThumbnails(db) {
@@ -985,6 +990,12 @@ function isVideoRecord(img) {
   return img?.mediaType === 'video' ||
     (img?.mimeType || '').startsWith('video/') ||
     /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(img?.fileName || img?.url || '');
+}
+
+function isMotionRecord(img) {
+  return isVideoRecord(img) ||
+    (img?.mimeType || '').toLowerCase() === 'image/gif' ||
+    /\.(gif)(?:$|\?)/i.test(img?.fileName || img?.url || '');
 }
 
 function getVisibleTags(img) {
