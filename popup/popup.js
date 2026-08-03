@@ -214,7 +214,8 @@ function bindCategoryScroller() {
     categoryDragState = {
       x: event.clientX,
       scrollLeft: categoryList.scrollLeft,
-      moved: false
+      moved: false,
+      tag: event.target.closest('.category-tag')
     };
     categoryList.classList.add('dragging');
     categoryList.setPointerCapture(event.pointerId);
@@ -232,7 +233,14 @@ function bindCategoryScroller() {
     if (categoryDragState.moved) {
       event.preventDefault();
       categoryList.dataset.dragged = 'true';
-      setTimeout(() => delete categoryList.dataset.dragged, 0);
+      setTimeout(() => delete categoryList.dataset.dragged, 120);
+    } else if (categoryDragState.tag?.dataset.category) {
+      event.preventDefault();
+      event.stopPropagation();
+      activateCategory(categoryDragState.tag.dataset.category);
+    }
+    if (categoryList.hasPointerCapture(event.pointerId)) {
+      categoryList.releasePointerCapture(event.pointerId);
     }
     categoryDragState = null;
     categoryList.classList.remove('dragging');
@@ -504,7 +512,10 @@ function handleCategoryClick(event) {
 
   const cat = tag.dataset.category;
   if (!cat) return;
+  activateCategory(cat);
+}
 
+function activateCategory(cat) {
   currentCategory = currentCategory === cat ? null : cat;
   currentFilter = 'all';
   setActiveFilter('all');
