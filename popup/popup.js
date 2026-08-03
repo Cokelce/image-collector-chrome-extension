@@ -124,6 +124,7 @@ function bindEvents() {
   document.getElementById('btnExport').addEventListener('click', exportData);
   document.getElementById('btnClear').addEventListener('click', clearAll);
   btnDriveStatus.addEventListener('click', handleDriveStatusClick);
+  categoryList.addEventListener('click', handleCategoryClick);
 
   // 预览关闭
   document.getElementById('previewClose').addEventListener('click', closePreview);
@@ -363,8 +364,8 @@ async function handleDriveStatusClick() {
     const status = driveStatusCache || await sendDriveMessage({ action: 'driveGetStatus' });
 
     if (!status.configured) {
-      chrome.runtime.openOptionsPage();
       showToast('请先配置 Drive 云端同步');
+      await openOptionsPageFromPopup();
       return;
     }
 
@@ -392,6 +393,35 @@ async function handleDriveStatusClick() {
   } finally {
     setDrivePillBusy(false);
   }
+}
+
+function openOptionsPageFromPopup() {
+  const optionsUrl = chrome.runtime.getURL('options/options.html');
+  return new Promise((resolve) => {
+    if (chrome.tabs?.create) {
+      chrome.tabs.create({ url: optionsUrl, active: true }, () => {
+        if (!chrome.runtime.lastError) {
+          resolve();
+          return;
+        }
+        openRuntimeOptionsPage(resolve, optionsUrl);
+      });
+      return;
+    }
+    openRuntimeOptionsPage(resolve, optionsUrl);
+  });
+}
+
+function openRuntimeOptionsPage(resolve, optionsUrl) {
+  if (chrome.runtime.openOptionsPage) {
+    chrome.runtime.openOptionsPage(() => {
+      if (chrome.runtime.lastError) window.open(optionsUrl, '_blank');
+      resolve();
+    });
+    return;
+  }
+  window.open(optionsUrl, '_blank');
+  resolve();
 }
 
 function updateDrivePill(status) {
@@ -461,23 +491,25 @@ function renderCategoryList() {
     .forEach(([cat, count]) => {
       const tag = document.createElement('button');
       tag.className = 'category-tag' + (currentCategory === cat ? ' active' : '');
+      tag.dataset.category = cat;
       tag.textContent = `${cat} (${count})`;
-      tag.addEventListener('click', () => {
-        if (categoryList.dataset.dragged === 'true') return;
-        if (currentCategory === cat) {
-          currentCategory = null;
-        } else {
-          currentCategory = cat;
-        }
-        currentFilter = 'all';
-        setActiveFilter('all');
-        renderGallery();
-        // 更新分类按钮样式
-        categoryList.querySelectorAll('.category-tag').forEach(t => t.classList.remove('active'));
-        if (currentCategory) tag.classList.add('active');
-      });
       categoryList.appendChild(tag);
     });
+}
+
+function handleCategoryClick(event) {
+  const tag = event.target.closest('.category-tag');
+  if (!tag || !categoryList.contains(tag)) return;
+  if (categoryList.dataset.dragged === 'true') return;
+
+  const cat = tag.dataset.category;
+  if (!cat) return;
+
+  currentCategory = currentCategory === cat ? null : cat;
+  currentFilter = 'all';
+  setActiveFilter('all');
+  renderCategoryList();
+  renderGallery();
 }
 
 function renderGallery() {
