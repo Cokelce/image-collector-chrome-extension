@@ -188,6 +188,12 @@ function bindEvents() {
     showToast('导出成功');
   });
 
+  document.getElementById('btnImport').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+  });
+
+  document.getElementById('importFileInput').addEventListener('change', importData);
+
   // 清空
   document.getElementById('btnClearData').addEventListener('click', async () => {
     if (!confirm('确定清空所有收藏图片吗？此操作不可恢复。')) return;
@@ -196,6 +202,90 @@ function bindEvents() {
     const db = await getDB();
     await db.deleteAllImages();
     showToast('已清空');
+  });
+}
+
+async function importData(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+
+  let records = [];
+  try {
+    const parsed = JSON.parse(await file.text());
+    records = normalizeImportRecords(parsed);
+  } catch {
+    showToast('导入失败：JSON 文件格式不正确');
+    return;
+  }
+
+  if (!records.length) {
+    showToast('导入失败：没有找到可恢复的图片链接');
+    return;
+  }
+
+  const db = await getDB();
+  const images = await db.getAllImages();
+  const existingUrls = new Set(images.map((image) => image.url).filter(Boolean));
+  let imported = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  setImportBusy(true);
+  showToast(`开始导入 ${records.length} 条收藏...`);
+  for (const record of records) {
+    if (existingUrls.has(record.url)) {
+      skipped += 1;
+      continue;
+    }
+
+    try {
+      const result = await sendSaveImageMessage(record);
+      if (!result?.success) throw new Error(result?.error || '保存失败');
+      existingUrls.add(record.url);
+      imported += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  setImportBusy(false);
+  await refreshDriveStatus();
+  showToast(`导入完成：新增 ${imported}，跳过 ${skipped}，失败 ${failed}`);
+}
+
+function normalizeImportRecords(parsed) {
+  const list = Array.isArray(parsed) ? parsed : (parsed?.images || parsed?.records || []);
+  const records = [];
+  for (const item of list) {
+    const url = String(item?.url || item?.src || item?.imageUrl || item?.mediaUrl || '').trim();
+    if (!/^https?:\/\//i.test(url) && !url.startsWith('data:')) continue;
+    records.push({
+      action: 'saveImage',
+      url,
+      pageUrl: item.pageUrl || item.sourcePage || '',
+      pageTitle: item.pageTitle || item.title || item.historyTitle || '',
+      mediaType: item.mediaType || '',
+      category: item.category || '',
+      tags: item.tags || item.keywords || [],
+      width: Number(item.width || 0),
+      height: Number(item.height || 0),
+      source: 'import'
+    });
+  }
+  return records;
+}
+
+function sendSaveImageMessage(message) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        reject(new Error(error.message));
+        return;
+      }
+      resolve(response);
+    });
   });
 }
 
@@ -347,6 +437,13 @@ function setDriveBusy(busy) {
     const element = document.getElementById(id);
     if (element) element.disabled = busy;
   });
+}
+
+function setImportBusy(busy) {
+  const button = document.getElementById('btnImport');
+  const input = document.getElementById('importFileInput');
+  if (button) button.disabled = busy;
+  if (input) input.disabled = busy;
 }
 
 function focusDriveClientInput() {

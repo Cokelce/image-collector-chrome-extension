@@ -145,6 +145,7 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
     const thumbnail = mediaType === 'image' ? await createImageThumbnail(blob) : null;
 
     const urlKeywords = extractUrlKeywords(imageUrl);
+    const importedTags = cleanTags(message.tags || message.keywords || []);
     const analysis = await analyzeImageBasic(blob, {
       imageUrl,
       pageUrl,
@@ -158,11 +159,11 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
     const imageData = {
       url: imageUrl,
       fileName: fileName,
-      category: analysis.category || '未分类',
-      tags: cleanTags([...urlKeywords, ...analysis.tags]),
+      category: message.category || analysis.category || '未分类',
+      tags: cleanTags([...importedTags, ...urlKeywords, ...analysis.tags]),
       color: analysis.color || null,
-      width: analysis.width || 0,
-      height: analysis.height || 0,
+      width: analysis.width || Number(message.width || 0),
+      height: analysis.height || Number(message.height || 0),
       size: fileSize,
       mediaType,
       pageUrl: pageUrl,
@@ -185,23 +186,24 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
   } catch (error) {
     console.warn('[ImageCollector] Blob save failed, keeping URL-only record:', error.message);
     const mediaType = getMediaType('', imageUrl, message.mediaType);
-    const category = ImageCollectorAnalyzer.classifyText({
+    const importedTags = cleanTags(message.tags || message.keywords || []);
+    const category = message.category || ImageCollectorAnalyzer.classifyText({
       imageUrl,
       pageUrl,
       pageTitle,
       fileName: buildFileName(imageUrl, '', mediaType),
-      tags: extractUrlKeywords(imageUrl)
+      tags: [...importedTags, ...extractUrlKeywords(imageUrl)]
     }) || (mediaType === 'video' ? '动态壁纸' : '链接收藏');
 
-    const fallbackTags = cleanTags([...extractUrlKeywords(imageUrl), 'url-only']);
+    const fallbackTags = cleanTags([...importedTags, ...extractUrlKeywords(imageUrl), 'url-only']);
     const id = await addImage({
       url: imageUrl,
       fileName: buildFileName(imageUrl, '', mediaType),
       category,
       tags: fallbackTags,
       color: null,
-      width: 0,
-      height: 0,
+      width: Number(message.width || 0),
+      height: Number(message.height || 0),
       size: 0,
       mediaType,
       pageUrl,
@@ -306,6 +308,7 @@ async function createImageThumbnail(blob) {
 // 提取 URL 关键词
 function extractUrlKeywords(url) {
   try {
+    if (String(url || '').startsWith('data:')) return [];
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
     const segments = pathname.split('/').filter(s => s && s.length > 2);
