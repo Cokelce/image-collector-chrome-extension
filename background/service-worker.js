@@ -69,7 +69,7 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== 'saveImage' || !info.srcUrl) return;
   saveImageFromUrl(info.srcUrl, tab, {
-    pageUrl: info.pageUrl,
+    pageUrl: isDetailPageUrl(info.linkUrl) ? info.linkUrl : info.pageUrl,
     pageTitle: tab?.title || '',
     mediaType: info.mediaType || '',
     source: 'context-menu'
@@ -129,11 +129,96 @@ function resetContextMenu() {
   });
 }
 
+function isDetailPageUrl(url) {
+  try {
+    const parsed = new URL(url || '');
+    return parsed.hostname.includes('haowallpaper.com') && /\/homeViewLook\/\d+/.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+async function getSourcePageMeta(pageUrl) {
+  if (!isDetailPageUrl(pageUrl)) return { title: '', tags: [], width: 0, height: 0, pageUrl: pageUrl || '' };
+
+  try {
+    const response = await fetch(pageUrl, { credentials: 'include' });
+    if (!response.ok) return { title: '', tags: [], width: 0, height: 0, pageUrl };
+
+    const html = await response.text();
+    const title = readMetaContent(html, 'og:title') || readHtmlTitle(html);
+    const description = readMetaContent(html, 'og:description') || readMetaContent(html, 'description');
+    const keywords = readMetaContent(html, 'keywords');
+    const dimensions = parseDimensions(`${title} ${description}`);
+
+    return {
+      title,
+      tags: cleanTags([
+        ...extractMetaKeywords(keywords),
+        ...extractMetaKeywords(title),
+        ...extractMetaKeywords(description)
+      ]),
+      width: dimensions.width,
+      height: dimensions.height,
+      pageUrl
+    };
+  } catch {
+    return { title: '', tags: [], width: 0, height: 0, pageUrl };
+  }
+}
+
+function readMetaContent(html, name) {
+  const safeName = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const patterns = [
+    new RegExp(`<meta[^>]+(?:property|name)=["']${safeName}["'][^>]+content=["']([^"']*)["'][^>]*>`, 'i'),
+    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${safeName}["'][^>]*>`, 'i')
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return decodeHtmlText(match[1]).trim();
+  }
+  return '';
+}
+
+function readHtmlTitle(html) {
+  return decodeHtmlText(html.match(/<title[^>]*>(.*?)<\/title>/i)?.[1] || '').trim();
+}
+
+function decodeHtmlText(text) {
+  return String(text || '')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+function parseDimensions(text) {
+  const match = String(text || '').match(/(\d{3,5})\s*[xX×]\s*(\d{3,5})/);
+  return {
+    width: match ? Number(match[1]) : 0,
+    height: match ? Number(match[2]) : 0
+  };
+}
+
+function extractMetaKeywords(text) {
+  const words = String(text || '')
+    .replace(/[【】「」｜|:：/]/g, ' ')
+    .split(/[\s,，、。；;（）()]+/)
+    .map(value => value.trim())
+    .filter(value => value.length >= 2 && value.length <= 12);
+  return cleanTags(words);
+}
+
 // 从 URL 下载并保存图片/动图到 IndexedDB
 async function saveImageFromUrl(imageUrl, tab, message = {}) {
-  const pageUrl = message.pageUrl || tab?.url || '';
-  const pageTitle = message.pageTitle || tab?.title || '';
+  let pageUrl = message.pageUrl || tab?.url || '';
+  let pageTitle = message.pageTitle || tab?.title || '';
   const source = message.source || 'page';
+  const sourceMeta = await getSourcePageMeta(pageUrl);
+  if (sourceMeta.title) pageTitle = sourceMeta.title;
+  if (sourceMeta.pageUrl) pageUrl = sourceMeta.pageUrl;
 
   try {
     const response = await fetch(imageUrl, { mode: 'cors', credentials: 'include' });
@@ -145,7 +230,7 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
     const thumbnail = mediaType === 'image' ? await createImageThumbnail(blob) : null;
 
     const urlKeywords = extractUrlKeywords(imageUrl);
-    const importedTags = cleanTags(message.tags || message.keywords || []);
+    const importedTags = cleanTags([...(message.tags || message.keywords || []), ...sourceMeta.tags]);
     const analysis = await analyzeImageBasic(blob, {
       imageUrl,
       pageUrl,
@@ -162,8 +247,8 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
       category: message.category || analysis.category || '未分类',
       tags: cleanTags([...importedTags, ...urlKeywords, ...analysis.tags]),
       color: analysis.color || null,
-      width: analysis.width || Number(message.width || 0),
-      height: analysis.height || Number(message.height || 0),
+      width: analysis.width || Number(message.width || sourceMeta.width || 0),
+      height: analysis.height || Number(message.height || sourceMeta.height || 0),
       size: fileSize,
       mediaType,
       pageUrl: pageUrl,
@@ -186,7 +271,7 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
   } catch (error) {
     console.warn('[ImageCollector] Blob save failed, keeping URL-only record:', error.message);
     const mediaType = getMediaType('', imageUrl, message.mediaType);
-    const importedTags = cleanTags(message.tags || message.keywords || []);
+    const importedTags = cleanTags([...(message.tags || message.keywords || []), ...sourceMeta.tags]);
     const category = message.category || ImageCollectorAnalyzer.classifyText({
       imageUrl,
       pageUrl,
@@ -202,8 +287,8 @@ async function saveImageFromUrl(imageUrl, tab, message = {}) {
       category,
       tags: fallbackTags,
       color: null,
-      width: Number(message.width || 0),
-      height: Number(message.height || 0),
+      width: Number(message.width || sourceMeta.width || 0),
+      height: Number(message.height || sourceMeta.height || 0),
       size: 0,
       mediaType,
       pageUrl,

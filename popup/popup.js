@@ -315,6 +315,7 @@ async function classifyExistingImages(db) {
 
 function shouldAutoClassifyImage(img) {
   if (!img.category || img.category === '未分类') return true;
+  if (img.category === '科技数码') return true;
   return img.category === '动态壁纸' && !isMotionRecord(img);
 }
 

@@ -7,7 +7,7 @@
   const FALLBACK_CATEGORY = '其他收藏';
 
   const TEXT_RULES = [
-    ['人像人物', ['portrait', 'people', 'person', 'girl', 'boy', 'woman', 'man', 'face', 'beauty', 'model', 'cosplay', 'avatar', '人像', '人物', '美女', '女生', '女孩', '男生', '写真', '头像', '明星']],
+    ['人像人物', ['portrait', 'people', 'person', 'girl', 'boy', 'woman', 'man', 'face', 'beauty', 'model', 'cosplay', 'avatar', '人像', '人物', '美女', '女生', '女孩', '男生', '写真', '头像', '明星', '长发', '短发', '高颜值', '甜酷', '卧姿', '裙', '模特']],
     ['动漫插画', ['anime', 'manga', 'comic', 'cartoon', 'illustration', 'illust', 'drawing', 'artwork', '二次元', '动漫', '插画', '漫画', '卡通', '原画', '手绘']],
     ['风景自然', ['landscape', 'nature', 'mountain', 'forest', 'sky', 'cloud', 'sea', 'ocean', 'beach', 'flower', 'scenery', 'sunset', '风景', '自然', '山', '森林', '天空', '云', '海', '花', '日落']],
     ['城市建筑', ['city', 'urban', 'street', 'building', 'architecture', 'road', 'neon', '城市', '街道', '建筑', '楼', '夜景', '霓虹', '公路']],
@@ -15,22 +15,28 @@
     ['美食饮品', ['food', 'drink', 'coffee', 'cake', 'dessert', '美食', '食物', '咖啡', '甜品', '饮品']],
     ['交通工具', ['car', 'vehicle', 'train', 'plane', 'ship', 'bike', 'motor', '汽车', '车辆', '火车', '飞机', '船', '摩托']],
     ['游戏影视', ['game', 'movie', 'film', 'cinema', 'character', '游戏', '电影', '影视', '角色']],
-    ['科技数码', ['tech', 'digital', 'phone', 'computer', 'device', 'ai', '科技', '数码', '手机', '电脑', '设备']]
+    ['科技数码', ['tech', 'digital', 'phone', 'smartphone', 'camera', 'laptop', 'keyboard', 'robot', 'chip', 'processor', 'hardware', 'ai', '科技', '数码', '手机', '相机', '镜头', '笔记本电脑', '键盘', '机器人', '芯片', '处理器', '硬件']]
   ];
 
   function classifyText(meta = {}) {
-    const text = [
+    const text = normalizeClassifierText([
       meta.imageUrl,
       meta.pageUrl,
       meta.pageTitle,
       meta.fileName,
       ...(meta.tags || [])
-    ].filter(Boolean).join(' ').toLowerCase();
+    ].filter(Boolean).join(' '));
 
     for (const [category, terms] of TEXT_RULES) {
       if (terms.some(term => text.includes(term.toLowerCase()))) return category;
     }
     return '';
+  }
+
+  function normalizeClassifierText(text) {
+    return String(text || '')
+      .toLowerCase()
+      .replace(/电脑壁纸|手机壁纸|桌面壁纸|动态壁纸|wallpapers?|haowallpaper|哲风壁纸/g, ' ');
   }
 
   async function analyzeBlob(blob, meta = {}) {
@@ -223,6 +229,7 @@
   function classifyStats(stats, width, height) {
     const ratio = width / height;
     if (stats.skinRatio > 0.22 && stats.greenRatio < 0.22 && stats.blueRatio < 0.34) return '人像人物';
+    if (stats.skinRatio > 0.12 && stats.greenRatio < 0.18 && stats.blueRatio < 0.28 && ratio < 2.2) return '人像人物';
     if (stats.saturation > 0.36 && stats.edgeScore < 0.13) return '动漫插画';
     if (stats.greenRatio > 0.24 || (stats.blueRatio > 0.32 && stats.greenRatio > 0.08)) return '风景自然';
     if (stats.grayRatio > 0.32 && stats.edgeScore > 0.13) return '城市建筑';
