@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>IndexedDB Blob 测试</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+    .test-result { padding: 10px; margin: 10px 0; border-radius: 8px; }
+    .success { background: rgba(80, 180, 80, 0.3); border: 1px solid rgba(80, 180, 80, 0.5); }
+    .error { background: rgba(200, 80, 80, 0.3); border: 1px solid rgba(200, 80, 80, 0.5); }
+    .info { background: rgba(100, 150, 255, 0.3); border: 1px solid rgba(100, 150, 255, 0.5); }
+    img { max-width: 200px; border-radius: 8px; margin: 10px 0; }
+    button { padding: 10px 20px; background: rgba(100, 150, 255, 0.3); border: 1px solid rgba(100, 150, 255, 0.5); color: white; border-radius: 8px; cursor: pointer; margin: 5px; }
+    button:hover { background: rgba(100, 150, 255, 0.5); }
+  </style>
+</head>
+<body>
+  <h1>🧪 IndexedDB Blob 读取测试</h1>
+  <p>此页面测试从 IndexedDB 读取 ArrayBuffer 并转换为 Blob URL 的功能</p>
+  
+  <button onclick="testDBAccess()">测试数据库访问</button>
+  <button onclick="testBlobCreation()">测试 Blob URL 创建</button>
+  <button onclick="listAllImages()">列出所有图片</button>
+  <button onclick="clearDB()">清空数据库</button>
+  
+  <div id="results"></div>
+  
+  <script>
+    const results = document.getElementById('results');
+    
+    function log(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `test-result ${type}`;
+      div.textContent = msg;
+      results.appendChild(div);
+    }
+    
+    function clearLog() {
+      results.innerHTML = '';
+    }
+    
+    // 打开 IndexedDB
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('ImageCollectorDB', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('images')) {
+            const store = db.createObjectStore('images', { keyPath: 'id', autoIncrement: true });
+            store.createIndex('url', 'url', { unique: false });
+            store.createIndex('category', 'category', { unique: false });
+            store.createIndex('tags', 'tags', { unique: false, multiEntry: true });
+            store.createIndex('createdAt', 'createdAt', { unique: false });
+          }
+        };
+      });
+    }
+    
+    // 获取所有图片
+    async function getAllImages() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readonly');
+        const store = tx.objectStore('images');
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    
+    // 删除所有图片
+    async function clearDB() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readwrite');
+        const store = tx.objectStore('images');
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    }
+    
+    async function testDBAccess() {
+      clearLog();
+      try {
+        const images = await getAllImages();
+        log(`✅ 数据库访问成功！找到 ${images.length} 张图片`, 'success');
+      } catch (error) {
+        log(`❌ 数据库访问失败: ${error.message}`, 'error');
+      }
+    }
+    
+    async function testBlobCreation() {
+      clearLog();
+      try {
+        // 创建一个测试 ArrayBuffer
+        const testData = new Uint8Array([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG 头部
+        const arrayBuffer = testData.buffer;
+        
+        // 测试创建 Blob URL（和 popup.js 中一样的逻辑）
+        const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        log(`✅ Blob URL 创建成功: ${blobUrl}`, 'success');
+        log(`   Blob 大小: ${blob.size} bytes`, 'info');
+        log(`   Blob 类型: ${blob.type}`, 'info');
+        
+        // 显示图片
+        const img = document.createElement('img');
+        img.src = blobUrl;
+        img.alt = '测试图片';
+        results.appendChild(img);
+        
+        // 清理
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          log('✅ Blob URL 已清理', 'success');
+        }, 2000);
+        
+      } catch (error) {
+        log(`❌ Blob URL 创建失败: ${error.message}`, 'error');
+      }
+    }
+    
+    async function listAllImages() {
+      clearLog();
+      try {
+        const images = await getAllImages();
+        
+        if (images.length === 0) {
+          log('📭 数据库中没有图片', 'info');
+          return;
+        }
+        
+        log(`📊 找到 ${images.length} 张图片:`, 'success');
+        
+        images.forEach((img, index) => {
+          const hasBlob = img.imageData && img.imageData.byteLength > 0;
+          const blobSize = hasBlob ? `${(img.imageData.byteLength / 1024).toFixed(1)} KB` : '无';
+          
+          log(`  ${index + 1}. ${img.fileName || '未知'}`, 'info');
+          log(`     分类: ${img.category || '未分类'} | 大小: ${blobSize}`, 'info');
+          log(`     尺寸: ${img.width || '?'} × ${img.height || '?'}`, 'info');
+          log(`     标签: ${(img.tags || []).slice(0, 3).join(', ') || '无'}`, 'info');
+          log(`     有 Blob 数据: ${hasBlob ? '✅' : '❌'}`, hasBlob ? 'success' : 'error');
+          
+          // 如果有 blob 数据，显示图片
+          if (hasBlob) {
+            try {
+              const blob = new Blob([img.imageData], { type: img.mimeType || 'image/jpeg' });
+              const blobUrl = URL.createObjectURL(blob);
+              const imgEl = document.createElement('img');
+              imgEl.src = blobUrl;
+              imgEl.alt = img.fileName;
+              results.appendChild(imgEl);
+              
+              // 保存 URL 以便清理
+              img._blobUrl = blobUrl;
+            } catch (e) {
+              log(`     ❌ 无法显示图片: ${e.message}`, 'error');
+            }
+          }
+        });
+        
+        // 清理所有 blob URLs
+        setTimeout(() => {
+          images.forEach(img => {
+            if (img._blobUrl) {
+              URL.revokeObjectURL(img._blobUrl);
+            }
+          });
+          log('✅ 所有 Blob URL 已清理', 'success');
+        }, 5000);
+        
+      } catch (error) {
+        log(`❌ 查询失败: ${error.message}`, 'error');
+      }
+    }
+    
+    // 页面加载时自动测试
+    window.addEventListener('DOMContentLoaded', async () => {
+      log('🚀 测试页面已就绪', 'success');
+      log💡 提示: 先在网页上点击 ☆ 按钮保存图片，然后回来查看', 'info');
+      
+      // 自动检查数据库
+      setTimeout(() => testDBAccess(), 500);
+    });
+  </script>
+</body>
+</html>

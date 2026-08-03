@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片收藏夹 - 设置</title>
+  <style>
+    /* options.css - 玻璃质感样式 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: white;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: rgba(20, 20, 40, 0.75);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    
+    .subtitle {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    
+    .section {
+      margin-bottom: 32px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .setting-item.drive-panel {
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .setting-main {
+      min-width: 0;
+      flex: 1;
+    }
+    
+    .setting-label {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .setting-desc {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 4px;
+    }
+    
+    .setting-action {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .setting-stack {
+      display: grid;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .text-input {
+      min-width: 0;
+      flex: 1;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      outline: none;
+      font-size: 13px;
+    }
+
+    .text-input::placeholder {
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .text-input:focus {
+      border-color: rgba(130, 170, 255, 0.5);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .code-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.68);
+      font-size: 12px;
+    }
+
+    .code-line code {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.86);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      background: rgba(100, 150, 255, 0.2);
+      border: 1px solid rgba(100, 150, 255, 0.3);
+      border-radius: 8px;
+      color: white;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn:hover {
+      background: rgba(100, 150, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    .btn.primary {
+      background: rgba(100, 150, 255, 0.3);
+      border-color: rgba(100, 150, 255, 0.5);
+    }
+    
+    .toggle {
+      width: 44px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .toggle.active {
+      background: rgba(100, 150, 255, 0.5);
+    }
+    
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.3s;
+    }
+    
+    .toggle.active::after {
+      left: 22px;
+    }
+    
+    .info-box {
+      padding: 16px;
+      background: rgba(100, 150, 255, 0.1);
+      border: 1px solid rgba(100, 150, 255, 0.2);
+      border-radius: 12px;
+      margin-top: 24px;
+    }
+    
+    .info-box p {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    .drive-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 6px 10px;
+      margin-top: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .advanced-cloud-panel {
+      margin-top: 10px;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .advanced-cloud-panel summary {
+      cursor: pointer;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>✨ 图片收藏夹</h1>
+    <p class="subtitle">设置与偏好</p>
+
+    <div class="section">
+      <div class="section-title">基础设置</div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">下载文件夹</div>
+          <div class="setting-desc">选择图片保存的默认文件夹</div>
+        </div>
+        <div class="setting-action">
+          <button class="btn" id="btnChooseFolder">选择文件夹</button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">自动分析</div>
+          <div class="setting-desc">收藏后自动分析图片内容并分类</div>
+        </div>
+        <div class="toggle active" id="toggleAutoAnalyze"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">AI 智能分类</div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">TensorFlow.js 模型</div>
+          <div class="setting-desc">启用本地 AI 分类（首次需下载 ~16MB 模型）</div>
+        </div>
+        <div class="toggle" id="toggleAI"></div>
+      </div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">模型状态</div>
+          <div class="setting-desc" id="modelStatus">未加载</div>
+        </div>
+        <div class="setting-action">
+          <button class="btn" id="btnLoadModel">加载模型</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Google Drive 云端同步</div>
+
+      <div class="setting-item drive-panel">
+        <div class="setting-main">
+          <div class="setting-label">自动同步到 Drive 云端</div>
+          <div class="setting-desc">收藏后直接上传到 Google Drive 云端；需要先保存 OAuth Client ID 并登录 Drive</div>
+          <div class="drive-status" id="driveStatus">正在检查 Drive 状态...</div>
+        </div>
+        <div class="toggle" id="toggleDriveSync"></div>
+      </div>
+
+      <div class="setting-item drive-panel">
+        <div class="setting-stack">
+          <div>
+            <div class="setting-label">OAuth Client ID</div>
+            <div class="setting-desc">用于让插件获得上传 Drive 的授权；这是公开 ID，不是密码</div>
+          </div>
+          <div class="input-row">
+            <input class="text-input" id="driveClientIdInput" type="text" placeholder="xxxxx.apps.googleusercontent.com" autocomplete="off">
+            <button class="btn primary" id="btnSaveDriveClientId">保存</button>
+          </div>
+          <div class="code-line">
+            <span>回调地址</span>
+            <code id="driveRedirectUri">读取中...</code>
+            <button class="btn" id="btnCopyDriveRedirect">复制</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">Drive 账号</div>
+          <div class="setting-desc">登录后会在云端创建“图片收藏夹/电脑壁纸/手机壁纸”并自动上传</div>
+        </div>
+        <div class="setting-action">
+          <button class="btn primary" id="btnDriveLogin">登录 Drive</button>
+          <button class="btn" id="btnDriveSyncNow">立即同步</button>
+          <button class="btn" id="btnDriveLogout">退出</button>
+        </div>
+      </div>
+
+      <details class="advanced-cloud-panel">
+        <summary>备用：Google Drive 桌面文件夹同步</summary>
+        <div class="setting-item drive-panel">
+          <div class="setting-main">
+            <div class="setting-label">本地 Drive 文件夹</div>
+            <div class="setting-desc">备用方案：先写入电脑上的 Drive 同步文件夹，再由 Google Drive 桌面版上传</div>
+            <div class="drive-status" id="localDriveStatus">正在检查本地 Drive 文件夹...</div>
+          </div>
+          <div class="toggle" id="toggleLocalDriveSync"></div>
+        </div>
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">备用文件夹</div>
+            <div class="setting-desc">只有你不想用云端 API 时才需要</div>
+          </div>
+          <div class="setting-action">
+            <button class="btn" id="btnLocalDriveChoose">选择文件夹</button>
+            <button class="btn" id="btnLocalDriveSyncNow">同步到文件夹</button>
+            <button class="btn" id="btnLocalDriveClose">关闭</button>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="section">
+      <div class="section-title">数据管理</div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">导出数据</div>
+          <div class="setting-desc">导出收藏列表为 JSON 文件</div>
+        </div>
+        <div class="setting-action">
+          <button class="btn primary" id="btnExport">导出</button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div>
+          <div class="setting-label">清空数据</div>
+          <div class="setting-desc">删除所有收藏记录</div>
+        </div>
+        <div class="setting-action">
+          <button class="btn" id="btnClearData" style="background: rgba(255,100,100,0.2); border-color: rgba(255,100,100,0.3);">清空</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <p>
+        💡 <strong>使用提示：</strong><br>
+        1. 在任意网页图片上右键，选择“收藏这张图片”<br>
+        2. 点击插件图标查看和管理收藏的图片<br>
+        3. 下载图片按钮会把收藏图片保存到系统下载目录<br>
+        4. Drive 云端同步需要保存 OAuth Client ID 后登录；登录后收藏会自动上传到云端
+      </p>
+    </div>
+  </div>
+
+  <script src="../lib/db.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

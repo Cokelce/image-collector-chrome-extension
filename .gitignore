@@ -1,0 +1,24 @@
+node_modules/
+
+# Local build/package outputs
+dist/
+build/
+*.crx
+*.zip
+
+# Local secrets and machine-specific files
+.env
+.env.*
+*.pem
+*.key
+
+# Test/debug screenshots generated during local verification
+screenshot*.png
+playwright*.png
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

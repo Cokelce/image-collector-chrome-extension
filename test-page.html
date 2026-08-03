@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extension Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .image-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .image-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .image-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .image-card .caption {
+      padding: 12px;
+      font-size: 14px;
+      color: #333;
+    }
+    .instructions {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 16px;
+      margin-bottom: 30px;
+      border-radius: 4px;
+    }
+    .instructions h3 {
+      margin-top: 0;
+      color: #1976d2;
+    }
+    .instructions ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin: 8px 0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 图片收藏夹 - 测试页面</h1>
+  <p class="subtitle">此页面用于测试插件功能</p>
+
+  <div class="instructions">
+    <h3>测试步骤：</h3>
+    <ol>
+      <li>将鼠标移到任意图片上，会出现 ☆ 收藏按钮</li>
+      <li>点击 ☆ 按钮收藏图片</li>
+      <li>点击浏览器工具栏的插件图标（⭐）打开弹窗</li>
+      <li>在弹窗中查看收藏的图片</li>
+      <li>尝试搜索功能（输入关键词）</li>
+      <li>点击图片查看详情预览</li>
+    </ol>
+  </div>
+
+  <div class="image-grid">
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/nature1/400/300" alt="Nature">
+      <div class="caption">自然风景 1</div>
+    </div>
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/city1/400/300" alt="City">
+      <div class="caption">城市建筑 1</div>
+    </div>
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/tech1/400/300" alt="Technology">
+      <div class="caption">科技 1</div>
+    </div>
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/animal1/400/300" alt="Animal">
+      <div class="caption">动物 1</div>
+    </div>
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/food1/400/300" alt="Food">
+      <div class="caption">美食 1</div>
+    </div>
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/art1/400/300" alt="Art">
+      <div class="caption">艺术 1</div>
+    </div>
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/nature2/400/300" alt="Nature">
+      <div class="caption">自然风景 2</div>
+    </div>
+    <div class="image-card">
+      <img src="https://picsum.photos/seed/city2/400/300" alt="City">
+      <div class="caption">城市建筑 2</div>
+    </div>
+  </div>
+</body>
+</html>

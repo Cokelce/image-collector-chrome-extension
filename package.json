@@ -1,0 +1,9 @@
+{
+  "name": "image-collector-chrome-extension",
+  "version": "1.0.0",
+  "description": "A Chrome MV3 extension for collecting images and live wallpapers with local search, categorization, and optional Google Drive cloud sync.",
+  "license": "MIT",
+  "scripts": {
+    "check": "node --check background/service-worker.js && node --check popup/popup.js && node --check options/options.js && node --check analyzer/analyzer.js && node --check lib/db.js && node --check content/content.js"
+  }
+}

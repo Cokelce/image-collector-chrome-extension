@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "图片收藏夹",
+  "version": "1.0.0",
+  "description": "通过右键菜单收藏全网图片和动图，本地保存，分类管理和搜索",
+  "permissions": [
+    "downloads",
+    "storage",
+    "contextMenus",
+    "identity"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://www.googleapis.com/*",
+    "https://accounts.google.com/*"
+  ],
+  "oauth2": {
+    "client_id": "REPLACE_WITH_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.file"
+    ]
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_page": "options/options.html"
+}
