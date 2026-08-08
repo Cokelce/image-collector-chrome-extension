@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "图片收藏夹",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "通过右键菜单收藏全网图片和动图，本地保存，分类管理和搜索",
   "permissions": [
     "downloads",
@@ -14,12 +14,6 @@
     "https://www.googleapis.com/*",
     "https://accounts.google.com/*"
   ],
-  "oauth2": {
-    "client_id": "REPLACE_WITH_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/drive.file"
-    ]
-  },
   "background": {
     "service_worker": "background/service-worker.js"
   },

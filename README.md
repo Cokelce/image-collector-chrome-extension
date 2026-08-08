@@ -14,6 +14,14 @@
 
 ## 安装
 
+### 正式安装
+
+Edge/Chrome 只有通过浏览器商店安装后，才不会一直提示“关闭开发人员模式下的扩展”。本地加载目录适合开发调试，但浏览器会把它当成开发版。
+
+发布到 Microsoft Edge Add-ons 时，上传 `dist` 里的 zip 包即可。商店审核通过后，用户从商店安装，就不会再看到开发者模式提醒。
+
+### 本地调试安装
+
 1. 下载或克隆本仓库。
 2. 打开 Chrome，进入 `chrome://extensions`。
 3. 打开右上角 `开发者模式`。
@@ -89,6 +97,21 @@ Google Drive API 要求 OAuth 授权。`OAuth Client ID` 是公开应用 ID，�
 - 图片上传到你自己的 Google Drive，扩展没有自建服务器。
 - OAuth token 保存在浏览器本地扩展存储中。
 - 清空数据会删除本机 IndexedDB 里的收藏记录，不会自动删除已经上传到 Drive 的文件。
+- 扩展不收集密码、Cookie、支付信息、通讯录或浏览历史。
+
+公开发布版本默认不内置固定 Google Client ID。需要 Drive 同步的用户，在设置页填自己的 OAuth Client ID 后再登录即可。
+
+## Edge 发布包
+
+本仓库的发布包只需要包含扩展运行文件，不需要包含 `node_modules`、测试截图、`.git` 或本地调试文件。
+
+当前推荐上传文件：
+
+```text
+dist/image-collector-edge-1.0.1.zip
+```
+
+Edge 商店后台需要填写隐私政策链接时，可以使用本 README 的 `隐私说明` 页面链接。
 
 ## 开发验证
 
