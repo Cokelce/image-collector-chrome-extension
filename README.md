@@ -105,10 +105,10 @@ Google Drive API 要求 OAuth 授权。`OAuth Client ID` 是公开应用 ID，�
 
 本仓库的发布包只需要包含扩展运行文件，不需要包含 `node_modules`、测试截图、`.git` 或本地调试文件。
 
-当前推荐上传文件：
+推荐上传文件名：
 
 ```text
-dist/image-collector-edge-1.0.1.zip
+image-collector-edge-1.0.1.zip
 ```
 
 Edge 商店后台需要填写隐私政策链接时，可以使用本 README 的 `隐私说明` 页面链接。
